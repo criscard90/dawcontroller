@@ -87,7 +87,7 @@ class BleMidiServer:
         service_uuid = uuid.UUID(MIDI_SERVICE_UUID)
         result = await gatt.GattServiceProvider.create_async(service_uuid)
 
-        if result.error != gatt.GattCommunicationStatus.success:
+        if result.error != gatt.GattCommunicationStatus.SUCCESS:
             self.log(f"Errore creazione ServiceProvider: {result.error}")
             return
 
@@ -162,7 +162,7 @@ class BleMidiServer:
 
                 self.log(f"RX MIDI: {data.hex()} ({len(data)} bytes)")
 
-                if request.option == gatt.GattWriteOption.write_with_response:
+                if request.option == gatt.GattWriteOption.WRITE_WITH_RESPONSE:
                     request.respond()
 
             except Exception as e:
