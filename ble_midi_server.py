@@ -127,8 +127,8 @@ class BleMidiServer:
         adv_params = gatt.GattServiceProviderAdvertisingParameters()
         adv_params.is_connectable = True
         adv_params.is_discoverable = True
-
-        self._service_provider.start_advertising(adv_params)
+        self._service_provider.update_advertising_parameters(adv_params)
+        self._service_provider.start_advertising()
         self.log(f"Advertising avviato come '{SERVER_NAME}'")
         self.log("In attesa di connessioni...")
 
