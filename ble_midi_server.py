@@ -87,8 +87,8 @@ class BleMidiServer:
         service_uuid = uuid.UUID(MIDI_SERVICE_UUID)
         result = await gatt.GattServiceProvider.create_async(service_uuid)
 
-        if result.status != gatt.GattServiceProviderAdvertisementStatus.success:
-            self.log(f"Errore creazione ServiceProvider: {result.Status}")
+        if result.error != gatt.GattCommunicationStatus.success:
+            self.log(f"Errore creazione ServiceProvider: {result.error}")
             return
 
         self._service_provider = result.service_provider
@@ -156,19 +156,19 @@ class BleMidiServer:
                     self.log("Write request rifiutato (no access)")
                     return
 
-                reader = streams.DataReader.FromBuffer(request.Value)
-                data = bytearray(request.Value.Length)
-                reader.ReadBytes(data)
+                reader = streams.DataReader.from_buffer(request.value)
+                data = bytearray(request.value.length)
+                reader.read_bytes(data)
 
                 self.log(f"RX MIDI: {data.hex()} ({len(data)} bytes)")
 
-                if request.Option == gatt.GattWriteOption.WriteWithResponse:
-                    request.Respond()
+                if request.option == gatt.GattWriteOption.write_with_response:
+                    request.respond()
 
             except Exception as e:
                 self.log(f"Errore process_write: {e}")
             finally:
-                deferral.Complete()
+                deferral.complete()
 
         asyncio.run_coroutine_threadsafe(process_write(), self._loop)
 
@@ -180,11 +180,11 @@ class BleMidiServer:
                 request = await args.get_request_async()
                 if request is None:
                     return
-                request.RespondWithValue(streams.Buffer(0))
+                request.respond_with_value(streams.Buffer(0))
             except Exception as e:
                 self.log(f"Errore process_read: {e}")
             finally:
-                deferral.Complete()
+                deferral.complete()
 
         asyncio.run_coroutine_threadsafe(process_read(), self._loop)
 
