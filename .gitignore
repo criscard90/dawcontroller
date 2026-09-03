@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+_patch*.py
+test_*.py
+*.lock
