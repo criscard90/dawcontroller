@@ -140,13 +140,13 @@ class BleMidiServer:
         finally:
             try:
                 self._service_provider.stop_advertising()
-                self._midi_char.WriteRequested -= self._on_write_requested
-                self._midi_char.ReadRequested -= self._on_read_requested
+                self._midi_char.remove_write_requested(self._on_write_requested)
+                self._midi_char.remove_read_requested(self._on_read_requested)
                 self.log("Advertising fermato.")
             except Exception as e:
                 self.log(f"Errore chiusura: {e}")
 
-    def _on_write_requested(self, sender, args):
+    def _on_write_requested(self, args):
         deferral = args.get_deferral()
 
         async def process_write():
@@ -172,7 +172,7 @@ class BleMidiServer:
 
         asyncio.run_coroutine_threadsafe(process_write(), self._loop)
 
-    def _on_read_requested(self, sender, args):
+    def _on_read_requested(self, args):
         deferral = args.get_deferral()
 
         async def process_read():
