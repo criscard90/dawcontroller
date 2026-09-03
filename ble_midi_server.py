@@ -87,12 +87,12 @@ class BleMidiServer:
         service_uuid = uuid.UUID(MIDI_SERVICE_UUID)
         result = await gatt.GattServiceProvider.create_async(service_uuid)
 
-        if result.Status != gatt.GattServiceProviderAdvertisementStatus.Success:
+        if result.status != gatt.GattServiceProviderAdvertisementStatus.success:
             self.log(f"Errore creazione ServiceProvider: {result.Status}")
             return
 
-        self._service_provider = result.ServiceProvider
-        self.log(f"ServiceProvider creato: {self._service_provider.Service.Uuid}")
+        self._service_provider = result.service_provider
+        self.log(f"ServiceProvider creato: {self._service_provider.service.uuid}")
 
         # 2. Crea i parametri per la caratteristica MIDI
         char_params = gatt.GattLocalCharacteristicParameters()
@@ -111,12 +111,12 @@ class BleMidiServer:
             char_uuid, char_params
         )
 
-        if char_result.Error != bluetooth.BluetoothError.Success:
+        if char_result.error != bluetooth.BluetoothError.success:
             self.log(f"Errore creazione caratteristica: {char_result.Error}")
             return
 
-        self._midi_char = char_result.Characteristic
-        self.log(f"Caratteristica MIDI creata: {self._midi_char.Uuid}")
+        self._midi_char = char_result.characteristic
+        self.log(f"Caratteristica MIDI creata: {self._midi_char.uuid}")
 
         # 4. Sottoscrivi gli eventi
         self._midi_char.WriteRequested += self._on_write_requested
