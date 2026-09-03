@@ -127,8 +127,13 @@ class BleMidiServer:
         adv_params = gatt.GattServiceProviderAdvertisingParameters()
         adv_params.is_connectable = True
         adv_params.is_discoverable = True
-        self._service_provider.update_advertising_parameters(adv_params)
-        self._service_provider.start_advertising()
+        self._advertising_started = False
+        try:
+            self._service_provider.start_advertising_with_parameters(adv_params)
+        except Exception as e:
+            self.log(f"Errore avvio advertising: {e}")
+            return
+        self._advertising_started = True
         self.log(f"Advertising avviato come '{SERVER_NAME}'")
         self.log("In attesa di connessioni...")
 
@@ -140,7 +145,8 @@ class BleMidiServer:
             pass
         finally:
             try:
-                self._service_provider.stop_advertising()
+                if self._advertising_started:
+                    self._service_provider.stop_advertising()
                 self._midi_char.remove_write_requested(self._write_wrapper)
                 self._midi_char.remove_read_requested(self._read_wrapper)
                 self.log("Advertising fermato.")
