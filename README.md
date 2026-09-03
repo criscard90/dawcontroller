@@ -80,7 +80,7 @@ The PWA sends OSC messages based on note numbers. Here's the default mapping:
 ### Step 4: Install & Connect the PWA
 
 1. Open **Chrome** on your Android phone
-2. Navigate to your PWA URL (or use the hosted version)
+2. Navigate to PWA URL https://criscard90.github.io/dawcontroller/
 3. Tap **INSTALLA** to install the PWA (or use Chrome's "Add to Home Screen")
 4. Open the PWA
 5. Tap **CONNETTI** and select your PC from the Bluetooth device list
