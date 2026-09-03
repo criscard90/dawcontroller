@@ -5,17 +5,21 @@ import queue
 from datetime import datetime
 
 # Compatibilità con Bleak 0.21+ (API server modulare)
+BLEAK_SERVER_AVAILABLE = False
 try:
     from bleak.server import BleakServer
     from bleak.server.service import BleakGATTService
     from bleak.server.characteristic import BleakGATTCharacteristic
     BLEAK_SERVER_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"Import server Bleak fallito: {e}")
     try:
         from bleak import BleakServer
         BLEAK_SERVER_AVAILABLE = False
-    except ImportError:
+    except ImportError as e2:
         print("Errore: Bleak non installato o versione non supportata.")
+        print("Verifica con: pip show bleak")
+        print("Oppure installa/ripara con: pip install --upgrade bleak")
         sys.exit(1)
 
 MIDI_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
