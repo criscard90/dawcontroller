@@ -85,7 +85,7 @@ The PWA sends OSC messages based on note numbers. Here's the default mapping:
 4. Open the PWA
 5. Tap **CONNETTI** and select your PC from the Bluetooth device list
 
-<img width="2340" height="1080" alt="Screenshot_2026-09-03-15-51-08-117_com android chrome" src="https://github.com/user-attachments/assets/88458fb6-ed55-479e-8131-6996071b5dac" />
+<img width="2340" height="1080" alt="Screenshot_2026-09-03-15-51-08-117_com android chrome" src="https://github.com/user-attachments/assets/65690613-2b3f-4ef1-a3e0-d7e8cab63f99" />
 
 ---
 
