@@ -3,33 +3,73 @@ import sys
 import threading
 import queue
 from datetime import datetime
-from bleak import BleakServer
+
+# Compatibilità con Bleak 0.21+ (API server modulare)
+try:
+    from bleak.server import BleakServer
+    from bleak.server.service import BleakGATTService
+    from bleak.server.characteristic import BleakGATTCharacteristic
+    BLEAK_SERVER_AVAILABLE = True
+except ImportError:
+    try:
+        from bleak import BleakServer
+        BLEAK_SERVER_AVAILABLE = False
+    except ImportError:
+        print("Errore: Bleak non installato o versione non supportata.")
+        sys.exit(1)
 
 MIDI_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
 MIDI_CHARACTERISTIC_UUID = "7772e5dd-3868-4112-a1a9-f2669d106bf3"
 SERVER_NAME = "DAW MIDI Server"
 
 
-class MidiCharacteristic:
-    def __init__(self, log_queue):
-        self._value = bytearray()
-        self._notifying = False
-        self._log_queue = log_queue
+if BLEAK_SERVER_AVAILABLE:
+    class MidiCharacteristic(BleakGATTCharacteristic):
+        def __init__(self, log_queue):
+            super().__init__(
+                MIDI_CHARACTERISTIC_UUID,
+                properties=["write", "notify"],
+                value=bytearray(),
+            )
+            self._value = bytearray()
+            self._notifying = False
+            self._log_queue = log_queue
 
-    async def read_request(self):
-        return bytes(self._value)
+        async def on_read(self):
+            return bytes(self._value)
 
-    async def write_request(self, value):
-        self._value = value
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        self._log_queue.put(f"[{timestamp}] RX: {value.hex()}")
-        return True
+        async def on_write(self, value):
+            self._value = value
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            self._log_queue.put(f"[{timestamp}] RX: {value.hex()}")
+            return True
 
-    async def start_notify(self):
-        self._notifying = True
+        async def on_start_notify(self):
+            self._notifying = True
 
-    async def stop_notify(self):
-        self._notifying = False
+        async def on_stop_notify(self):
+            self._notifying = False
+else:
+    class MidiCharacteristic:
+        def __init__(self, log_queue):
+            self._value = bytearray()
+            self._notifying = False
+            self._log_queue = log_queue
+
+        async def read_request(self):
+            return bytes(self._value)
+
+        async def write_request(self, value):
+            self._value = value
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            self._log_queue.put(f"[{timestamp}] RX: {value.hex()}")
+            return True
+
+        async def start_notify(self):
+            self._notifying = True
+
+        async def stop_notify(self):
+            self._notifying = False
 
 
 class MidiServer:
@@ -59,30 +99,42 @@ class MidiServer:
 
     async def _main(self):
         midi_char = MidiCharacteristic(self.log_queue)
-        self._server = BleakServer()
-        await self._server.add_service(MIDI_SERVICE_UUID)
-        await self._server.add_characteristic(
-            MIDI_SERVICE_UUID,
-            MIDI_CHARACTERISTIC_UUID,
-            properties=["write", "notify"],
-            read_request=midi_char.read_request,
-            write_request=midi_char.write_request,
-            start_notify=midi_char.start_notify,
-            stop_notify=midi_char.stop_notify,
-        )
-        await self._server.start_advertising(SERVER_NAME)
-        self.log_queue.put(f"Server avviato: {SERVER_NAME}")
         try:
-            while self.running:
-                await asyncio.sleep(0.5)
-        except asyncio.CancelledError:
-            pass
-        finally:
+            if BLEAK_SERVER_AVAILABLE:
+                service = BleakGATTService(MIDI_SERVICE_UUID)
+                service.add_characteristic(midi_char)
+                self._server = BleakServer()
+                self._server.add_service(service)
+                await self._server.start_advertising(SERVER_NAME)
+            else:
+                self._server = BleakServer()
+                await self._server.add_service(MIDI_SERVICE_UUID)
+                await self._server.add_characteristic(
+                    MIDI_SERVICE_UUID,
+                    MIDI_CHARACTERISTIC_UUID,
+                    properties=["write", "notify"],
+                    read_request=midi_char.read_request,
+                    write_request=midi_char.write_request,
+                    start_notify=midi_char.start_notify,
+                    stop_notify=midi_char.stop_notify,
+                )
+                await self._server.start_advertising(SERVER_NAME)
+
+            self.log_queue.put(f"Server avviato: {SERVER_NAME}")
             try:
-                await self._server.stop_advertising()
-            except Exception:
+                while self.running:
+                    await asyncio.sleep(0.5)
+            except asyncio.CancelledError:
                 pass
-            self.log_queue.put("Server fermato.")
+            finally:
+                try:
+                    await self._server.stop_advertising()
+                except Exception:
+                    pass
+                self.log_queue.put("Server fermato.")
+        except Exception as e:
+            self.log_queue.put(f"Errore nel server: {e}")
+            raise
 
     def stop(self):
         self.running = False
