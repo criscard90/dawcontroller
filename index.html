@@ -226,6 +226,34 @@
       margin-top: 16px;
       opacity: 0.6;
     }
+
+    /* Toast non blocking */
+    .toast {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: var(--card-bg);
+      border: 1px solid var(--accent-yellow);
+      color: var(--text-main);
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body>
@@ -292,7 +320,20 @@
 
   <footer>BLE-MIDI CONTROLLER</footer>
 
+  <div id="toast" class="toast"></div>
+
   <script>
+    // Toast non blocking
+    const toastEl = document.getElementById('toast');
+    let toastTimeout = null;
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 2500);
+    }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then((registration) => {
         registration.addEventListener('updatefound', () => {
@@ -339,13 +380,13 @@
       } catch (err) {
         console.error('Errore connessione:', err);
         btnText.textContent = 'CONNETTI';
-        alert('Impossibile connettersi. Verifica che:\n- Il PC sia acceso con Bluetooth attivo\n- Sia in esecuzione un server BLE MIDI sul PC\n- Seleziona il PC dalla lista che compare su Android.');
+        showToast('⚠ Impossibile connettersi. Verifica che il PC sia acceso con Bluetooth attivo e che il server BLE MIDI sia in esecuzione.');
       }
     });
 
     async function sendMidiNote(note) {
       if (!midiCharacteristic) {
-        alert('Dispositivo non connesso! Premi "CONNETTI" in alto.');
+        showToast('⚠ Dispositivo non connesso! Premi CONNETTI in alto.');
         return;
       }
 
