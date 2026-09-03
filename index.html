@@ -254,18 +254,90 @@
       transform: translateX(-50%) translateY(0);
       pointer-events: auto;
     }
+
+    /* Pulsante Installa App */
+    .install-btn {
+      background: linear-gradient(145deg, #1a3a1a, #0d260d);
+      border: 1px solid var(--accent-green);
+      color: var(--accent-green);
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: pulse-install 2s infinite;
+    }
+
+    .install-btn:hover {
+      background: linear-gradient(145deg, #2a5a2a, #1a3a1a);
+      box-shadow: 0 0 20px rgba(0, 230, 118, 0.3);
+    }
+
+    @keyframes pulse-install {
+      0%, 100% { box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+      50% { box-shadow: 0 4px 20px rgba(0, 230, 118, 0.4); }
+    }
+
+    /* Banner Landscape */
+    .landscape-hint {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-color);
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      color: var(--text-main);
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .landscape-hint svg {
+      width: 64px;
+      height: 64px;
+      fill: var(--accent-blue);
+      animation: rotate-phone 1.5s ease-in-out infinite;
+    }
+
+    @keyframes rotate-phone {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(90deg); }
+    }
   </style>
 </head>
 <body>
+
+  <div id="landscapeHint" class="landscape-hint">
+    <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+    <div>Ruota il telefono</div>
+    <div style="font-size:0.9rem;color:var(--text-sub);">Questa app funziona in landscape</div>
+  </div>
 
   <header>
     <div class="brand">
       <div class="brand-title">DAW Remote</div>
     </div>
-    <button id="connectBtn" class="status-btn">
-      <span class="status-dot"></span>
-      <span id="btnText">CONNETTI</span>
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button id="installBtn" class="install-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        INSTALLA
+      </button>
+      <button id="connectBtn" class="status-btn">
+        <span class="status-dot"></span>
+        <span id="btnText">CONNETTI</span>
+      </button>
+    </div>
   </header>
 
   <div class="transport">
@@ -334,6 +406,70 @@
         toastEl.classList.remove('show');
       }, 2500);
     }
+    // --- Installazione PWA ---
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'flex';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showToast('✅ App installata con successo!');
+      }
+      deferredPrompt = null;
+      installBtn.style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.style.display = 'none';
+      deferredPrompt = null;
+    });
+
+    // --- Landscape automatico ---
+    const landscapeHint = document.getElementById('landscapeHint');
+
+    function checkOrientation() {
+      if (window.innerHeight > window.innerWidth) {
+        // Portrait
+        if (!window.matchMedia('(display-mode: standalone)').matches) {
+          // Non in modalità app, mostra il suggerimento
+          landscapeHint.style.display = 'flex';
+        }
+      } else {
+        landscapeHint.style.display = 'none';
+      }
+    }
+
+    // Prova a bloccare l'orientamento landscape
+    async function lockLandscape() {
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('landscape');
+        }
+      } catch (e) {
+        // Alcuni browser non supportano il lock, mostra il suggerimento
+        console.log('Orientation lock non supportato:', e);
+      }
+    }
+
+    // Controlla l'all'avvio e quando cambia orientamento
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(checkOrientation, 100);
+      lockLandscape();
+    });
+
+    // Prova il lock all'avvio (funziona solo in modalità standalone)
+    lockLandscape();
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then((registration) => {
         registration.addEventListener('updatefound', () => {
