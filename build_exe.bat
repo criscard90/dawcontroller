@@ -14,6 +14,9 @@ pyinstaller --onefile ^
   --hidden-import=winrt.windows.devices.enumeration ^
   --hidden-import=winrt.windows.foundation ^
   --hidden-import=winrt.windows.storage.streams ^
+  --hidden-import=tkinter ^
+  --hidden-import=tkinter.ttk ^
+  --hidden-import=tkinter.scrolledtext ^
   ble_midi_server.py
 
 echo.
