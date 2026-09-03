@@ -494,10 +494,20 @@
       if (midiCharacteristic) return;
 
       try {
-        const device = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [MIDI_SERVICE_UUID]
-        });
+        // Prima prova con filtro per servizio MIDI (mostra solo dispositivi MIDI)
+        let device;
+        try {
+          device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: [MIDI_SERVICE_UUID] }],
+            optionalServices: [MIDI_SERVICE_UUID]
+          });
+        } catch (filterErr) {
+          // Se il filtro non trova nulla, fallback: mostra tutti i dispositivi
+          device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [MIDI_SERVICE_UUID]
+          });
+        }
 
         btnText.textContent = 'CONNECTING...';
 
