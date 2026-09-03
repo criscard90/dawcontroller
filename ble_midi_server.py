@@ -85,7 +85,7 @@ class BleMidiServer:
 
         # 1. Crea il GattServiceProvider
         service_uuid = uuid.UUID(MIDI_SERVICE_UUID)
-        result = await gatt.GattServiceProvider.CreateAsync(service_uuid)
+        result = await gatt.GattServiceProvider.create_async(service_uuid)
 
         if result.Status != gatt.GattServiceProviderAdvertisementStatus.Success:
             self.log(f"Errore creazione ServiceProvider: {result.Status}")
