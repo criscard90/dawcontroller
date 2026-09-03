@@ -40,8 +40,7 @@ A **Progressive Web App (PWA)** that turns your Android phone into a wireless MI
 2. Run the executable (no installation required)
 3. Click **AVVIA** to start the BLE MIDI server
 
-![Server Interface](screenshots/server-interface.png)
-*Replace with screenshot of the server GUI showing "AVVIA" button*
+<img width="723" height="525" alt="image" src="https://github.com/user-attachments/assets/865ff790-9112-45cb-88a3-6af17356533d" />
 
 > **Note:** Run as Administrator if you encounter Bluetooth permission issues.
 
@@ -53,13 +52,12 @@ This controller uses **OSC (Open Sound Control)** to communicate with REAPER. No
 2. Go to **Options → Preferences → Audio → Control/websockets**
 3. Click **Add** → Select **OSC**
 4. Configure:
-   - **Mode:** Accept incoming OSC messages
-   - **Port:** `8000`
-   - **IP:** `127.0.0.1` (localhost)
-5. Click **OK**
 
-![REAPER OSC Settings](screenshots/reaper-osc.png)
-*Replace with screenshot of REAPER OSC preferences*
+<img width="947" height="708" alt="image" src="https://github.com/user-attachments/assets/cb17d618-9cc9-4b82-bb74-24d2af43692c" />
+
+<img width="840" height="663" alt="image" src="https://github.com/user-attachments/assets/fad6cd3c-ada9-4e44-9f93-352b0a554ea8" />
+
+5. Click **OK**
 
 ### Step 3: Map OSC Actions
 
@@ -86,9 +84,6 @@ The PWA sends OSC messages based on note numbers. Here's the default mapping:
 3. Tap **INSTALLA** to install the PWA (or use Chrome's "Add to Home Screen")
 4. Open the PWA
 5. Tap **CONNETTI** and select your PC from the Bluetooth device list
-
-![Connection](screenshots/connection.png)
-*Replace with screenshot of the connection flow*
 
 ---
 
