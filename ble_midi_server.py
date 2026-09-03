@@ -119,8 +119,10 @@ class BleMidiServer:
         self.log(f"Caratteristica MIDI creata: {self._midi_char.uuid}")
 
         # 4. Sottoscrivi gli eventi
-        self._midi_char.add_write_requested(self._on_write_requested)
-        self._midi_char.add_read_requested(self._on_read_requested)
+        self._write_handler = lambda args: self._on_write_requested(args)
+        self._read_handler = lambda args: self._on_read_requested(args)
+        self._midi_char.add_write_requested(self._write_handler)
+        self._midi_char.add_read_requested(self._read_handler)
 
         # 5. Avvia l'advertising
         adv_params = gatt.GattServiceProviderAdvertisingParameters()
@@ -140,8 +142,8 @@ class BleMidiServer:
         finally:
             try:
                 self._service_provider.stop_advertising()
-                self._midi_char.remove_write_requested(self._on_write_requested)
-                self._midi_char.remove_read_requested(self._on_read_requested)
+                self._midi_char.remove_write_requested(self._write_handler)
+                self._midi_char.remove_read_requested(self._read_handler)
                 self.log("Advertising fermato.")
             except Exception as e:
                 self.log(f"Errore chiusura: {e}")
