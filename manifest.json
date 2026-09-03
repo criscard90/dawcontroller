@@ -3,12 +3,7 @@
   "name": "DAW MIDI BLE Remote",
   "icons": [
     {
-      "src": "icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "icon-512.png",
+      "src": "remote.png",
       "type": "image/png",
       "sizes": "512x512"
     }
@@ -17,5 +12,5 @@
   "background_color": "#0d0e12",
   "theme_color": "#0d0e12",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "landscape"
 }
