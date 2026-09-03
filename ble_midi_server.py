@@ -119,13 +119,13 @@ class BleMidiServer:
         self.log(f"Caratteristica MIDI creata: {self._midi_char.uuid}")
 
         # 4. Sottoscrivi gli eventi
-        self._midi_char.WriteRequested += self._on_write_requested
-        self._midi_char.ReadRequested += self._on_read_requested
+        self._midi_char.add_write_requested(self._on_write_requested)
+        self._midi_char.add_read_requested(self._on_read_requested)
 
         # 5. Avvia l'advertising
         adv_params = gatt.GattServiceProviderAdvertisingParameters()
-        adv_params.IsConnectable = True
-        adv_params.IsDiscoverable = True
+        adv_params.is_connectable = True
+        adv_params.is_discoverable = True
 
         self._service_provider.start_advertising(adv_params)
         self.log(f"Advertising avviato come '{SERVER_NAME}'")
