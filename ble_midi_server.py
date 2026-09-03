@@ -127,6 +127,26 @@ class BleMidiServer:
         adv_params = gatt.GattServiceProviderAdvertisingParameters()
         adv_params.is_connectable = True
         adv_params.is_discoverable = True
+        from winrt.windows.storage.streams import DataWriter
+        try:
+            dw = DataWriter()
+            dw.write_bytes(bytes([0x00]))
+            adv_params.service_data = {
+                uuid.UUID(MIDI_SERVICE_UUID): dw.detach_buffer()
+            }
+        except Exception as e:
+            self.log(f"Nota service_data: {e}")
+
+        # Monitora lo stato dell'advertising (ev. STARTED_WITHOUT_ALL_ADVERTISEMENT_DATA)
+        def _on_adv_status_changed(sender, args):
+            try:
+                self.log(f"Stato advertising: {self._service_provider.advertisement_status}")
+            except Exception as e:
+                self.log(f"Errore lettura stato adv: {e}")
+
+        self._adv_status_handler = _on_adv_status_changed
+        self._service_provider.add_advertisement_status_changed(self._adv_status_handler)
+
         self._advertising_started = False
         try:
             self._service_provider.start_advertising_with_parameters(adv_params)
@@ -134,7 +154,7 @@ class BleMidiServer:
             self.log(f"Errore avvio advertising: {e}")
             return
         self._advertising_started = True
-        self.log(f"Advertising avviato come '{SERVER_NAME}'")
+        self.log(f"Advertising avviato (il telefono vedra' il nome del PC)")
         self.log("In attesa di connessioni...")
 
         # 6. Mantieni il server attivo
@@ -147,6 +167,8 @@ class BleMidiServer:
             try:
                 if self._advertising_started:
                     self._service_provider.stop_advertising()
+                if hasattr(self, "_adv_status_handler"):
+                    self._service_provider.remove_advertisement_status_changed(self._adv_status_handler)
                 self._midi_char.remove_write_requested(self._write_wrapper)
                 self._midi_char.remove_read_requested(self._read_wrapper)
                 self.log("Advertising fermato.")
