@@ -107,7 +107,7 @@ class BleMidiServer:
 
         # 3. Crea la caratteristica MIDI
         char_uuid = uuid.UUID(MIDI_CHAR_UUID)
-        char_result = await self._service_provider.Service.CreateCharacteristicAsync(
+        char_result = await self._service_provider.Service.create_characteristic_async(
             char_uuid, char_params
         )
 
@@ -127,7 +127,7 @@ class BleMidiServer:
         adv_params.IsConnectable = True
         adv_params.IsDiscoverable = True
 
-        self._service_provider.StartAdvertising(adv_params)
+        self._service_provider.start_advertising(adv_params)
         self.log(f"Advertising avviato come '{SERVER_NAME}'")
         self.log("In attesa di connessioni...")
 
@@ -139,7 +139,7 @@ class BleMidiServer:
             pass
         finally:
             try:
-                self._service_provider.StopAdvertising()
+                self._service_provider.stop_advertising()
                 self._midi_char.WriteRequested -= self._on_write_requested
                 self._midi_char.ReadRequested -= self._on_read_requested
                 self.log("Advertising fermato.")
@@ -147,11 +147,11 @@ class BleMidiServer:
                 self.log(f"Errore chiusura: {e}")
 
     def _on_write_requested(self, sender, args):
-        deferral = args.GetDeferral()
+        deferral = args.get_deferral()
 
         async def process_write():
             try:
-                request = await args.GetRequestAsync()
+                request = await args.get_request_async()
                 if request is None:
                     self.log("Write request rifiutato (no access)")
                     return
@@ -173,11 +173,11 @@ class BleMidiServer:
         asyncio.run_coroutine_threadsafe(process_write(), self._loop)
 
     def _on_read_requested(self, sender, args):
-        deferral = args.GetDeferral()
+        deferral = args.get_deferral()
 
         async def process_read():
             try:
-                request = await args.GetRequestAsync()
+                request = await args.get_request_async()
                 if request is None:
                     return
                 request.RespondWithValue(streams.Buffer(0))
