@@ -2,8 +2,7 @@
 
 A **Progressive Web App (PWA)** that turns your Android phone into a wireless MIDI controller for **REAPER** DAW, using **Bluetooth Low Energy (BLE)**.
 
-![PWA Interface](screenshots/pwa-interface.png)
-*Replace with screenshot of the PWA interface on your phone*
+<img width="743" height="440" alt="image" src="https://github.com/user-attachments/assets/9ef9a219-1da2-4dd7-85b5-97cb3da11fbb" />
 
 ---
 
