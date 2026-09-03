@@ -267,20 +267,28 @@
 
       try {
         const device = await navigator.bluetooth.requestDevice({
-          filters: [{ services: [MIDI_SERVICE_UUID] }]
+          acceptAllDevices: true,
+          optionalServices: [MIDI_SERVICE_UUID]
         });
-        
+
         btnText.textContent = 'CONNECTING...';
+
+        device.addEventListener('gattserverdisconnected', () => {
+          midiCharacteristic = null;
+          btnText.textContent = 'CONNETTI';
+          connectBtn.classList.remove('connected');
+        });
+
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService(MIDI_SERVICE_UUID);
         midiCharacteristic = await service.getCharacteristic(MIDI_CHARACTERISTIC_UUID);
-        
+
         btnText.textContent = 'ONLINE';
         connectBtn.classList.add('connected');
       } catch (err) {
         console.error('Errore connessione:', err);
         btnText.textContent = 'CONNETTI';
-        alert('Impossibile connettersi al dispositivo Bluetooth.');
+        alert('Impossibile connettersi. Verifica che:\n- Il PC sia acceso con Bluetooth attivo\n- Sia in esecuzione un server BLE MIDI sul PC\n- Seleziona il PC dalla lista che compare su Android.');
       }
     });
 
