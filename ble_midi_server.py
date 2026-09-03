@@ -168,11 +168,16 @@ class BleMidiServer:
                 self.log(f"Errore chiusura: {e}")
 
     def _write_wrapper(self, *args, **kwargs):
-        if args:
+        # WinRT passa (sender, event_args) - prendiamo il secondo elemento
+        if len(args) >= 2:
+            self._on_write_requested(args[1])
+        elif len(args) == 1:
             self._on_write_requested(args[0])
 
     def _read_wrapper(self, *args, **kwargs):
-        if args:
+        if len(args) >= 2:
+            self._on_read_requested(args[1])
+        elif len(args) == 1:
             self._on_read_requested(args[0])
 
     def _on_write_requested(self, args):
