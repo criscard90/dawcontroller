@@ -8,6 +8,8 @@ Richiede i pacchetti: winrt-runtime, winrt-windows-devices-bluetooth, ecc.
 import asyncio
 import sys
 import threading
+import uuid
+from datetime import datetime
 import queue
 from datetime import datetime
 
@@ -16,7 +18,6 @@ try:
     import winrt.windows.devices.bluetooth as bluetooth
     import winrt.windows.devices.bluetooth.genericattributeprofile as gatt
     import winrt.windows.storage.streams as streams
-    import winrt.windows.foundation as foundation
 except ImportError as e:
     # Mostra errore in GUI invece di chiudersi
     try:
@@ -83,7 +84,7 @@ class BleMidiServer:
         self.log("Inizializzazione GATT Server...")
 
         # 1. Crea il GattServiceProvider
-        service_uuid = foundation.Uuid(MIDI_SERVICE_UUID)
+        service_uuid = uuid.UUID(MIDI_SERVICE_UUID)
         result = await gatt.GattServiceProvider.CreateAsync(service_uuid)
 
         if result.Status != gatt.GattServiceProviderAdvertisementStatus.Success:
@@ -105,7 +106,7 @@ class BleMidiServer:
         char_params.UserDescription = "MIDI I/O"
 
         # 3. Crea la caratteristica MIDI
-        char_uuid = foundation.Uuid(MIDI_CHAR_UUID)
+        char_uuid = uuid.UUID(MIDI_CHAR_UUID)
         char_result = await self._service_provider.Service.CreateCharacteristicAsync(
             char_uuid, char_params
         )
