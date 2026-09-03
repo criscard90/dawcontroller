@@ -494,20 +494,14 @@
       if (midiCharacteristic) return;
 
       try {
-        // Prima prova con filtro per servizio MIDI (mostra solo dispositivi MIDI)
-        let device;
-        try {
-          device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: [MIDI_SERVICE_UUID] }],
-            optionalServices: [MIDI_SERVICE_UUID]
-          });
-        } catch (filterErr) {
-          // Se il filtro non trova nulla, fallback: mostra tutti i dispositivi
-          device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: [MIDI_SERVICE_UUID]
-          });
-        }
+        // Mostra un toast con istruzioni PRIMA di aprire la lista dispositivi
+        showToast('📡 Cerca il nome del tuo PC nella lista (es. DESKTOP-XXX)', 3000);
+
+        // Mostra tutti i dispositivi BLE (il PC appare con il suo nome Windows)
+        const device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [MIDI_SERVICE_UUID]
+        });
 
         btnText.textContent = 'CONNECTING...';
 
@@ -526,7 +520,7 @@
       } catch (err) {
         console.error('Errore connessione:', err);
         btnText.textContent = 'CONNETTI';
-        showToast('⚠ Impossibile connettersi. Verifica che il PC sia acceso con Bluetooth attivo e che il server BLE MIDI sia in esecuzione.');
+        showToast('⚠ Connessione fallita! Verifica: 1) PC con Bluetooth BLE acceso 2) Server BLE MIDI avviato 3) Seleziona il nome corretto del PC nella lista.');
       }
     });
 
