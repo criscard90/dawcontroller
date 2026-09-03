@@ -92,9 +92,25 @@ class MidiServer:
             self._loop.stop()
 
 
+def show_error_and_exit(title, message):
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror(title, message)
+        root.destroy()
+    except Exception:
+        pass
+
+
 def main():
-    import tkinter as tk
-    from tkinter import ttk, scrolledtext
+    try:
+        import tkinter as tk
+        from tkinter import ttk, scrolledtext, messagebox
+    except Exception as e:
+        show_error_and_exit("Errore", f"Tkinter non disponibile:\n{e}")
+        return
 
     server = MidiServer()
 
@@ -105,11 +121,14 @@ def main():
             status_var.set("Fermato")
             status_label.config(foreground="red")
         else:
-            server.start()
-            btn.config(text="FERMA")
-            status_var.set("In esecuzione")
-            status_label.config(foreground="green")
-            root.after(100, update_log)
+            try:
+                server.start()
+                btn.config(text="FERMA")
+                status_var.set("In esecuzione")
+                status_label.config(foreground="green")
+                root.after(100, update_log)
+            except Exception as e:
+                messagebox.showerror("Errore avvio", str(e))
 
     def update_log():
         try:
@@ -129,7 +148,12 @@ def main():
             server.stop()
         root.destroy()
 
-    root = tk.Tk()
+    try:
+        root = tk.Tk()
+    except Exception as e:
+        show_error_and_exit("Errore GUI", f"Impossibile creare la finestra:\n{e}")
+        return
+
     root.title("DAW BLE MIDI Server")
     root.geometry("420x300")
     root.resizable(False, False)
@@ -155,4 +179,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        show_error_and_exit("Errore fatale", str(e))
