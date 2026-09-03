@@ -101,18 +101,18 @@ class BleMidiServer:
             gatt.GattCharacteristicProperties.WRITE_WITHOUT_RESPONSE |
             gatt.GattCharacteristicProperties.NOTIFY
         )
-        char_params.WriteProtectionLevel = gatt.GattProtectionLevel.Plain
-        char_params.ReadProtectionLevel = gatt.GattProtectionLevel.Plain
-        char_params.UserDescription = "MIDI I/O"
+        char_params.write_protection_level = gatt.GattProtectionLevel.PLAIN
+        char_params.read_protection_level = gatt.GattProtectionLevel.PLAIN
+        char_params.user_description = "MIDI I/O"
 
         # 3. Crea la caratteristica MIDI
         char_uuid = uuid.UUID(MIDI_CHAR_UUID)
-        char_result = await self._service_provider.Service.create_characteristic_async(
+        char_result = await self._service_provider.service.create_characteristic_async(
             char_uuid, char_params
         )
 
-        if char_result.error != bluetooth.BluetoothError.success:
-            self.log(f"Errore creazione caratteristica: {char_result.Error}")
+        if char_result.error != bluetooth.BluetoothError.SUCCESS:
+            self.log(f"Errore creazione caratteristica: {char_result.error}")
             return
 
         self._midi_char = char_result.characteristic
