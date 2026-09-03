@@ -11,6 +11,8 @@ import threading
 import uuid
 from datetime import datetime
 import queue
+import socket
+import struct
 
 # rtmidi opzionale: serve per inoltrare il MIDI alla DAW (loopMIDI/virtual port)
 try:
@@ -47,6 +49,49 @@ except ImportError as e:
 MIDI_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
 MIDI_CHAR_UUID = "7772e5dd-3868-4112-a1a9-f2669d106bf3"
 SERVER_NAME = "DAW MIDI Server"
+
+# ---- Configurazione OSC (tutto in casa: invia azioni a Reaper via UDP) ----
+# Indirizzo IP e porta dove Reaper ascolta i messaggi OSC (default: eh 127.0.0.1:8000)
+OSC_HOST = "127.0.0.1"
+OSC_PORT = 8000
+
+# Mappa nota(BLE MIDI)→comando Reaper (ID decimale generato da default Actions list)
+# NOTA: per verificare/cambiare un ID: in Reaper → Actions (?) → trova l'azione → tasto destro → "Copy command ID"
+OSC_ACTION_MAP = {
+    59: 1004,   # INIZIO  -> Transport: Go to start of arrangement
+    60: 1016,   # REC     -> Transport: Record
+    61: 40045,   # PLAY   -> Transport: Play
+    62: 1001,   # STOP    -> Transport: Stop
+    63: 40035,   # LOOP   -> Transport: Toggle repeat
+    64: 40029,   # UNDO   -> Edit: Undo
+    65: 40030,   # REDO  -> Edit: Redo
+    67: None,     # SOLO    -> non mappato per default
+    68: None,    # MARKER -> non mappato per default
+
+
+
+}
+
+
+def build_osc_msg(action_id):
+    """Costruisce un messaggio OSC '/action/<id>' con argomento int."""
+    addr = f"/action/{action_id}".encode("utf-8")
+    type_tags =b",i"
+    pad = lambda x: x + b"\x00" * (4 - len(x) % 4)
+    arg = struct.pack(">i", 1)
+    return pad(addr) + pad(type_tags) + arg
+
+
+def send_osc(action_id):
+    """Invia un messaggio OSC via UDP a Reaper. Ritorna True se mandato."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(1.0)
+        s.sendto(build_osc_msg(action_id), (OSC_HOST, OSC_PORT))
+        s.close()
+        return True
+    except Exception:
+        return False
 
 
 class BleMidiServer:
@@ -270,6 +315,17 @@ class BleMidiServer:
                 elif not self._midi_warned:
                     self.log("Nessuna porta MIDI aperta: il MIDI non arriva a Reaper (avvia loopMIDI/porta virtuale)")
                     self._midi_warned = True
+
+                # Invia OSC a Reaper (control trasporto/azioni, tutto in casa)
+                if len(data) >= 5:
+                    header, ts, status, note, vel = data[0], data[1], data[2], data[3], data[4]
+                    if status in (0x90, 0x80) and vel > 0:
+                        action_id = OSC_ACTION_MAP.get(note)
+                        if action_id:
+                            ok = send_osc(action_id)
+                            self.log("OSC-REAPER: nota " + str(note) + " -> azione " + str(action_id) + " (" + ("OK" if ok else "FALLITO") + ")")
+                        else:
+                            self.log("Nota " + str(note) + ": nessuna azione OSC mappata (aggiungila in OSC_ACTION_MAP)")
 
                 if request.option == gatt.GattWriteOption.WRITE_WITH_RESPONSE:
                     request.respond()
