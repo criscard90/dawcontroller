@@ -96,10 +96,10 @@ class BleMidiServer:
 
         # 2. Crea i parametri per la caratteristica MIDI
         char_params = gatt.GattLocalCharacteristicParameters()
-        char_params.CharacteristicProperties = (
-            gatt.GattCharacteristicProperties.Write |
-            gatt.GattCharacteristicProperties.WriteWithoutResponse |
-            gatt.GattCharacteristicProperties.Notify
+        char_params.characteristic_properties = (
+            gatt.GattCharacteristicProperties.WRITE |
+            gatt.GattCharacteristicProperties.WRITE_WITHOUT_RESPONSE |
+            gatt.GattCharacteristicProperties.NOTIFY
         )
         char_params.WriteProtectionLevel = gatt.GattProtectionLevel.Plain
         char_params.ReadProtectionLevel = gatt.GattProtectionLevel.Plain
