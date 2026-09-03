@@ -11,7 +11,13 @@ import threading
 import uuid
 from datetime import datetime
 import queue
-from datetime import datetime
+
+# rtmidi opzionale: serve per inoltrare il MIDI alla DAW (loopMIDI/virtual port)
+try:
+    import rtmidi as _rtmidi
+    _HAS_RTMIDI = True
+except ImportError:
+    _HAS_RTMIDI = False
 
 # Import WinRT - proiezioni Python delle API Windows
 try:
@@ -51,6 +57,50 @@ class BleMidiServer:
         self._loop = None
         self._service_provider = None
         self._midi_char = None
+        self.midi_out = None
+        self._midi_warned = False
+
+    def _print_midi_ports(self):
+        if not _HAS_RTMIDI:
+            self.log("MIDI-out non disponibile: 'pip install python-rtmidi'.")
+            return
+        try:
+            mo = _rtmidi.MidiOut()
+            ports = mo.get_ports()
+            self.log(f"Porte MIDI disponibili: {ports}")
+            mo.close()
+        except Exception as e:
+            self.log(f"Errore elenco porte MIDI: {e}")
+
+    def _open_midi_out(self):
+        if not _HAS_RTMIDI:
+            return
+        try:
+            mo = _rtmidi.MidiOut()
+            ports = mo.get_ports()
+            self.log(f"Porte MIDI di output: {ports}")
+            dev_index = None
+            # 1. Preferisce una porta loopMIDI/loopback/virtuale
+            for i,name in enumerate(ports):
+                low = name.lower()
+                if ("loopmidi" in low) or ("loopback" in low) or ("virtual" in low):
+                    dev_index = i
+                    break
+            # 2. Altrimenti la prima porta MIDI non-GS/synth
+            if dev_index is None:
+                for i,name in enumerate(ports):
+                    if "gs wavetable" not in name.lower():
+                        dev_index = i
+                        break
+            if dev_index is None:
+                self.log("Nessuna porta MIDI di output disponibile (installa loopMIDI!.)")
+                return
+            self.midi_out = mo
+            self.midi_out.open_port(dev_index)
+            self.log(f"MIDI inoltrato su: {ports[dev_index]}")
+        except Exception as e:
+            self.log(f"Errore apertura porta MIDI: {e}")
+            self.midi_out = None
 
     def log(self, msg: str):
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -123,6 +173,12 @@ class BleMidiServer:
         self._midi_char.add_read_requested(self._read_wrapper)
         self.log("Handlers eventi registrati")
 
+        # 4b. Apri la porta MIDI di output per la DAW (loopMIDI/virtual)
+        if _HAS_RTMIDI:
+            self._open_midi_out()
+        else:
+            self._print_midi_ports()
+
         # 5. Avvia l'advertising
         adv_params = gatt.GattServiceProviderAdvertisingParameters()
         adv_params.is_connectable = True
@@ -163,6 +219,12 @@ class BleMidiServer:
                     self._service_provider.remove_advertisement_status_changed(self._adv_status_handler)
                 self._midi_char.remove_write_requested(self._write_wrapper)
                 self._midi_char.remove_read_requested(self._read_wrapper)
+                if self.midi_out:
+                    try:
+                        self.midi_out.close_port()
+                        self.midi_out = None
+                    except Exception:
+                        pass
                 self.log("Advertising fermato.")
             except Exception as e:
                 self.log(f"Errore chiusura: {e}")
@@ -195,6 +257,19 @@ class BleMidiServer:
                 reader.read_bytes(data)
 
                 self.log(f"RX MIDI: {data.hex()} ({len(data)} bytes)")
+
+                # Inoltra i byte MIDI puri alla DAW (togliendo header+timestamp BLE)
+                if self.midi_out:
+                    # L'involucro BLE-MIDI e' (header, timestamp, ...midi...:)
+                    midi_bytes = data[2:] if len(data) > 2 else data
+                    try:
+                        self.midi_out.send_message(list(midi_bytes))
+                        self.log(f"MIDI-a-DAW: {midi_bytes.hex()}")
+                    except Exception as e:
+                        self.log(f"Errore invio MIDI: {e}")
+                elif not self._midi_warned:
+                    self.log("Nessuna porta MIDI aperta: il MIDI non arriva a Reaper (avvia loopMIDI/porta virtuale)")
+                    self._midi_warned = True
 
                 if request.option == gatt.GattWriteOption.WRITE_WITH_RESPONSE:
                     request.respond()

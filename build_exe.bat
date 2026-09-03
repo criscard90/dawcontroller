@@ -17,6 +17,7 @@ pyinstaller --onefile ^
   --hidden-import=tkinter ^
   --hidden-import=tkinter.ttk ^
   --hidden-import=tkinter.scrolledtext ^
+  --hidden-import=_midi ^
   ble_midi_server.py
 
 echo.
