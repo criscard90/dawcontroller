@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <title>DAW Studio Controller</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d0e12">
+  <style>
+    :root {
+      --bg-color: #0d0e12;
+      --card-bg: #161822;
+      --btn-bg: #1f2232;
+      --btn-active: #2b2f45;
+      --accent-green: #00e676;
+      --accent-red: #ff3d00;
+      --accent-yellow: #ffc107;
+      --accent-blue: #29b6f6;
+      --accent-purple: #ab47bc;
+      --text-main: #f0f2f5;
+      --text-sub: #78809a;
+      --glow-shadow: 0 0 15px;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px 16px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 4px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff, var(--text-sub));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .status-btn {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-sub);
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #555;
+      transition: background-color 0.3s;
+    }
+
+    .status-btn.connected {
+      border-color: var(--accent-green);
+      color: #fff;
+    }
+    .status-btn.connected .status-dot {
+      background-color: var(--accent-green);
+      box-shadow: var(--glow-shadow) var(--accent-green);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-gap: 14px;
+      flex-grow: 1;
+    }
+
+    .btn {
+      background: linear-gradient(145deg, #1d202e, #141620);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.4), 
+                  inset 0 1px 1px rgba(255,255,255,0.08);
+      transition: transform 0.08s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+      background: var(--btn-active);
+    }
+
+    .btn svg {
+      width: 32px;
+      height: 32px;
+      fill: currentColor;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .btn label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-sub);
+      pointer-events: none;
+      transition: color 0.2s ease;
+    }
+
+    .btn-rtz { color: var(--accent-blue); }
+    
+    .btn-rec { color: var(--accent-red); }
+    .btn-rec.active {
+      background: linear-gradient(145deg, #380d0d, #1f0505);
+      border-color: var(--accent-red);
+      box-shadow: 0 0 20px rgba(255, 61, 0, 0.4);
+    }
+    .btn-rec.active label { color: var(--accent-red); }
+
+    .btn-play { color: var(--accent-green); }
+    .btn-play.active {
+      background: linear-gradient(145deg, #093318, #031c0c);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 20px rgba(0, 230, 118, 0.3);
+    }
+    .btn-play.active label { color: var(--accent-green); }
+
+    .btn-stop { color: var(--text-main); }
+
+    .btn-loop.active {
+      color: var(--accent-purple);
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 15px rgba(171, 71, 188, 0.3);
+    }
+    .btn-loop.active label { color: var(--accent-purple); }
+
+    .btn-solo.active {
+      color: var(--accent-yellow);
+      border-color: var(--accent-yellow);
+    }
+    .btn-solo.active label { color: var(--accent-yellow); }
+
+    footer {
+      text-align: center;
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      color: var(--text-sub);
+      margin-top: 16px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">DAW Remote</div>
+    </div>
+    <button id="connectBtn" class="status-btn">
+      <span class="status-dot"></span>
+      <span id="btnText">CONNETTI</span>
+    </button>
+  </header>
+
+  <div class="grid">
+    <button class="btn btn-rtz" data-note="59">
+      <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      <label>INIZIO</label>
+    </button>
+
+    <button class="btn btn-stop" data-note="62">
+      <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+      <label>STOP</label>
+    </button>
+
+    <button class="btn btn-play" data-note="61">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <label>PLAY</label>
+    </button>
+
+    <button class="btn btn-rec" data-note="60">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+      <label>REC</label>
+    </button>
+
+    <button class="btn btn-loop" data-note="63">
+      <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+      <label>LOOP</label>
+    </button>
+
+    <button class="btn" data-note="68">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      <label>MARKER</label>
+    </button>
+
+    <button class="btn" data-note="64">
+      <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 6v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 10.28 17.18 8 12.5 8z"/></svg>
+      <label>UNDO</label>
+    </button>
+
+    <button class="btn" data-note="65">
+      <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.68 0-8.58 2.28-9.97 6.22l2.37.78C4.95 11.81 7.96 9.5 11.5 9.5c1.96 0 3.73.72 5.12 1.88L13 15h9V6l-3.6 4.6z"/></svg>
+      <label>REDO</label>
+    </button>
+
+    <button class="btn btn-solo" data-note="67">
+      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <label>SOLO</label>
+    </button>
+  </div>
+
+  <footer>BLE-MIDI CONTROLLER</footer>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(console.error);
+    }
+
+    const MIDI_SERVICE_UUID = '03b80e5a-ede8-4b33-a751-6ce34ec4c700';
+    const MIDI_CHARACTERISTIC_UUID = '7772e5dd-3868-4112-a1a9-f2669d106bf3';
+
+    let midiCharacteristic = null;
+    const connectBtn = document.getElementById('connectBtn');
+    const btnText = document.getElementById('btnText');
+
+    connectBtn.addEventListener('click', async () => {
+      if (midiCharacteristic) return;
+
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [MIDI_SERVICE_UUID] }]
+        });
+        
+        btnText.textContent = 'CONNECTING...';
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(MIDI_SERVICE_UUID);
+        midiCharacteristic = await service.getCharacteristic(MIDI_CHARACTERISTIC_UUID);
+        
+        btnText.textContent = 'ONLINE';
+        connectBtn.classList.add('connected');
+      } catch (err) {
+        console.error('Errore connessione:', err);
+        btnText.textContent = 'CONNETTI';
+        alert('Impossibile connettersi al dispositivo Bluetooth.');
+      }
+    });
+
+    async function sendMidiNote(note) {
+      if (!midiCharacteristic) {
+        alert('Dispositivo non connesso! Premi "CONNETTI" in alto.');
+        return;
+      }
+
+      const header = 0x80;
+      const timestamp = 0x80;
+      const noteOn = 0x90;
+      const noteOff = 0x80;
+      const velocity = 0x7F;
+
+      try {
+        const packetOn = new Uint8Array([header, timestamp, noteOn, note, velocity]);
+        await midiCharacteristic.writeValue(packetOn);
+
+        setTimeout(async () => {
+          const packetOff = new Uint8Array([header, timestamp, noteOff, note, 0x00]);
+          await midiCharacteristic.writeValue(packetOff);
+        }, 100);
+      } catch (e) {
+        console.error('Errore invio MIDI:', e);
+      }
+    }
+
+    document.querySelectorAll('.btn').forEach(btn => {
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const note = parseInt(btn.getAttribute('data-note'), 10);
+        
+        if (btn.classList.contains('btn-rec') || 
+            btn.classList.contains('btn-play') || 
+            btn.classList.contains('btn-loop') || 
+            btn.classList.contains('btn-solo')) {
+          btn.classList.toggle('active');
+        }
+
+        sendMidiNote(note);
+      });
+    });
+  </script>
+</body>
+</html>
