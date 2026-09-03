@@ -127,11 +127,7 @@ class BleMidiServer:
         adv_params = gatt.GattServiceProviderAdvertisingParameters()
         adv_params.is_connectable = True
         adv_params.is_discoverable = True
-        try:
-            # Il service_data in Windows non e' un dict: impostiamo i bytes
-            adv_params.service_data = bytes([0x03, 0x80])
-        except Exception as e:
-            self.log(f"Nota service_data: {e}")
+        # NOTA: niente service_data manuale - Windows gestisce da solo i dati del servizio
 
         # Monitora lo stato dell'advertising (ev. STARTED_WITHOUT_ALL_ADVERTISEMENT_DATA)
         def _on_adv_status_changed(sender, args):
