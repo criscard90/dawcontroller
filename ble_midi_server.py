@@ -1,88 +1,59 @@
+"""
+DAW BLE MIDI Server - WinRT Nativo (no Bleak)
+Usa le API Windows.Devices.Bluetooth.GenericAttributeProfile direttamente tramite proiezioni Python WinRT.
+Richiede i pacchetti: winrt-runtime, winrt-windows-devices-bluetooth, ecc.
+(già installati come dipendenze di bleak)
+"""
+
 import asyncio
 import sys
 import threading
 import queue
 from datetime import datetime
 
-# Compatibilità con Bleak 0.21+ (API server modulare)
-BLEAK_SERVER_AVAILABLE = False
+# Import WinRT - proiezioni Python delle API Windows
 try:
-    from bleak.server import BleakServer
-    from bleak.server.service import BleakGATTService
-    from bleak.server.characteristic import BleakGATTCharacteristic
-    BLEAK_SERVER_AVAILABLE = True
+    import winrt.windows.devices.bluetooth as bluetooth
+    import winrt.windows.devices.bluetooth.genericattributeprofile as gatt
+    import winrt.windows.storage.streams as streams
+    import winrt.windows.foundation as foundation
 except ImportError as e:
-    print(f"Import server Bleak fallito: {e}")
+    # Mostra errore in GUI invece di chiudersi
     try:
-        from bleak import BleakServer
-        BLEAK_SERVER_AVAILABLE = False
-    except ImportError as e2:
-        print("Errore: Bleak non installato o versione non supportata.")
-        print("Verifica con: pip show bleak")
-        print("Oppure installa/ripara con: pip install --upgrade bleak")
-        sys.exit(1)
+        import tkinter as tk
+        from tkinter import messagebox
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror(
+            "Errore WinRT",
+            f"Moduli WinRT non trovati.\n\n{e}\n\n"
+            "Installa con: pip install --upgrade bleak\n"
+            "(che include tutte le dipendenze WinRT)"
+        )
+        root.destroy()
+    except Exception:
+        print(f"Errore: Moduli WinRT non trovati. {e}")
+    sys.exit(1)
 
+
+# UUID standard BLE MIDI
 MIDI_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
-MIDI_CHARACTERISTIC_UUID = "7772e5dd-3868-4112-a1a9-f2669d106bf3"
+MIDI_CHAR_UUID = "7772e5dd-3868-4112-a1a9-f2669d106bf3"
 SERVER_NAME = "DAW MIDI Server"
 
 
-if BLEAK_SERVER_AVAILABLE:
-    class MidiCharacteristic(BleakGATTCharacteristic):
-        def __init__(self, log_queue):
-            super().__init__(
-                MIDI_CHARACTERISTIC_UUID,
-                properties=["write", "notify"],
-                value=bytearray(),
-            )
-            self._value = bytearray()
-            self._notifying = False
-            self._log_queue = log_queue
-
-        async def on_read(self):
-            return bytes(self._value)
-
-        async def on_write(self, value):
-            self._value = value
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            self._log_queue.put(f"[{timestamp}] RX: {value.hex()}")
-            return True
-
-        async def on_start_notify(self):
-            self._notifying = True
-
-        async def on_stop_notify(self):
-            self._notifying = False
-else:
-    class MidiCharacteristic:
-        def __init__(self, log_queue):
-            self._value = bytearray()
-            self._notifying = False
-            self._log_queue = log_queue
-
-        async def read_request(self):
-            return bytes(self._value)
-
-        async def write_request(self, value):
-            self._value = value
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            self._log_queue.put(f"[{timestamp}] RX: {value.hex()}")
-            return True
-
-        async def start_notify(self):
-            self._notifying = True
-
-        async def stop_notify(self):
-            self._notifying = False
-
-
-class MidiServer:
+class BleMidiServer:
     def __init__(self):
         self.running = False
         self.log_queue = queue.Queue()
         self._thread = None
         self._loop = None
-        self._server = None
+        self._service_provider = None
+        self._midi_char = None
+
+    def log(self, msg: str):
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.log_queue.put(f"[{timestamp}] {msg}")
 
     def start(self):
         if self.running:
@@ -91,61 +62,130 @@ class MidiServer:
         self._thread = threading.Thread(target=self._run_async, daemon=True)
         self._thread.start()
 
+    def stop(self):
+        self.running = False
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=3)
+        if self._loop and self._loop.is_running():
+            self._loop.stop()
+
     def _run_async(self):
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
         try:
             self._loop.run_until_complete(self._main())
         except Exception as e:
-            self.log_queue.put(f"Errore: {e}")
+            self.log(f"Errore server: {e}")
         finally:
             self.running = False
 
     async def _main(self):
-        midi_char = MidiCharacteristic(self.log_queue)
+        self.log("Inizializzazione GATT Server...")
+
+        # 1. Crea il GattServiceProvider
+        service_uuid = foundation.Uuid(MIDI_SERVICE_UUID)
+        result = await gatt.GattServiceProvider.CreateAsync(service_uuid)
+
+        if result.Status != gatt.GattServiceProviderAdvertisementStatus.Success:
+            self.log(f"Errore creazione ServiceProvider: {result.Status}")
+            return
+
+        self._service_provider = result.ServiceProvider
+        self.log(f"ServiceProvider creato: {self._service_provider.Service.Uuid}")
+
+        # 2. Crea i parametri per la caratteristica MIDI
+        char_params = gatt.GattLocalCharacteristicParameters()
+        char_params.CharacteristicProperties = (
+            gatt.GattCharacteristicProperties.Write |
+            gatt.GattCharacteristicProperties.WriteWithoutResponse |
+            gatt.GattCharacteristicProperties.Notify
+        )
+        char_params.WriteProtectionLevel = gatt.GattProtectionLevel.Plain
+        char_params.ReadProtectionLevel = gatt.GattProtectionLevel.Plain
+        char_params.UserDescription = "MIDI I/O"
+
+        # 3. Crea la caratteristica MIDI
+        char_uuid = foundation.Uuid(MIDI_CHAR_UUID)
+        char_result = await self._service_provider.Service.CreateCharacteristicAsync(
+            char_uuid, char_params
+        )
+
+        if char_result.Error != bluetooth.BluetoothError.Success:
+            self.log(f"Errore creazione caratteristica: {char_result.Error}")
+            return
+
+        self._midi_char = char_result.Characteristic
+        self.log(f"Caratteristica MIDI creata: {self._midi_char.Uuid}")
+
+        # 4. Sottoscrivi gli eventi
+        self._midi_char.WriteRequested += self._on_write_requested
+        self._midi_char.ReadRequested += self._on_read_requested
+
+        # 5. Avvia l'advertising
+        adv_params = gatt.GattServiceProviderAdvertisingParameters()
+        adv_params.IsConnectable = True
+        adv_params.IsDiscoverable = True
+
+        self._service_provider.StartAdvertising(adv_params)
+        self.log(f"Advertising avviato come '{SERVER_NAME}'")
+        self.log("In attesa di connessioni...")
+
+        # 6. Mantieni il server attivo
         try:
-            if BLEAK_SERVER_AVAILABLE:
-                service = BleakGATTService(MIDI_SERVICE_UUID)
-                service.add_characteristic(midi_char)
-                self._server = BleakServer()
-                self._server.add_service(service)
-                await self._server.start_advertising(SERVER_NAME)
-            else:
-                self._server = BleakServer()
-                await self._server.add_service(MIDI_SERVICE_UUID)
-                await self._server.add_characteristic(
-                    MIDI_SERVICE_UUID,
-                    MIDI_CHARACTERISTIC_UUID,
-                    properties=["write", "notify"],
-                    read_request=midi_char.read_request,
-                    write_request=midi_char.write_request,
-                    start_notify=midi_char.start_notify,
-                    stop_notify=midi_char.stop_notify,
-                )
-                await self._server.start_advertising(SERVER_NAME)
-
-            self.log_queue.put(f"Server avviato: {SERVER_NAME}")
+            while self.running:
+                await asyncio.sleep(0.5)
+        except asyncio.CancelledError:
+            pass
+        finally:
             try:
-                while self.running:
-                    await asyncio.sleep(0.5)
-            except asyncio.CancelledError:
-                pass
-            finally:
-                try:
-                    await self._server.stop_advertising()
-                except Exception:
-                    pass
-                self.log_queue.put("Server fermato.")
-        except Exception as e:
-            self.log_queue.put(f"Errore nel server: {e}")
-            raise
+                self._service_provider.StopAdvertising()
+                self._midi_char.WriteRequested -= self._on_write_requested
+                self._midi_char.ReadRequested -= self._on_read_requested
+                self.log("Advertising fermato.")
+            except Exception as e:
+                self.log(f"Errore chiusura: {e}")
 
-    def stop(self):
-        self.running = False
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=2)
-        if self._loop and self._loop.is_running():
-            self._loop.stop()
+    def _on_write_requested(self, sender, args):
+        deferral = args.GetDeferral()
+
+        async def process_write():
+            try:
+                request = await args.GetRequestAsync()
+                if request is None:
+                    self.log("Write request rifiutato (no access)")
+                    return
+
+                reader = streams.DataReader.FromBuffer(request.Value)
+                data = bytearray(request.Value.Length)
+                reader.ReadBytes(data)
+
+                self.log(f"RX MIDI: {data.hex()} ({len(data)} bytes)")
+
+                if request.Option == gatt.GattWriteOption.WriteWithResponse:
+                    request.Respond()
+
+            except Exception as e:
+                self.log(f"Errore process_write: {e}")
+            finally:
+                deferral.Complete()
+
+        asyncio.run_coroutine_threadsafe(process_write(), self._loop)
+
+    def _on_read_requested(self, sender, args):
+        deferral = args.GetDeferral()
+
+        async def process_read():
+            try:
+                request = await args.GetRequestAsync()
+                if request is None:
+                    return
+                request.RespondWithValue(streams.Buffer(0))
+            except Exception as e:
+                self.log(f"Errore process_read: {e}")
+            finally:
+                deferral.Complete()
+
+        asyncio.run_coroutine_threadsafe(process_read(), self._loop)
 
 
 def show_error_and_exit(title, message):
@@ -168,7 +208,7 @@ def main():
         show_error_and_exit("Errore", f"Tkinter non disponibile:\n{e}")
         return
 
-    server = MidiServer()
+    server = BleMidiServer()
 
     def on_start_stop():
         if server.running:
@@ -211,7 +251,7 @@ def main():
         return
 
     root.title("DAW BLE MIDI Server")
-    root.geometry("420x300")
+    root.geometry("480x320")
     root.resizable(False, False)
 
     top_frame = ttk.Frame(root, padding=10)
@@ -227,10 +267,18 @@ def main():
     log_frame = ttk.Frame(root, padding=(10, 0, 10, 10))
     log_frame.pack(fill=tk.BOTH, expand=True)
 
-    log_text = scrolledtext.ScrolledText(log_frame, height=10, state=tk.DISABLED)
+    log_text = scrolledtext.ScrolledText(log_frame, height=12, state=tk.DISABLED)
     log_text.pack(fill=tk.BOTH, expand=True)
 
     root.protocol("WM_DELETE_WINDOW", on_close)
+
+    # Messaggio iniziale
+    log_text.config(state=tk.NORMAL)
+    log_text.insert(tk.END, "Pronto. Clicca AVVIA per avviare il server BLE MIDI.\n")
+    log_text.insert(tk.END, f"Servizio: {MIDI_SERVICE_UUID}\n")
+    log_text.insert(tk.END, f"Caratteristica: {MIDI_CHAR_UUID}\n")
+    log_text.config(state=tk.DISABLED)
+
     root.mainloop()
 
 
