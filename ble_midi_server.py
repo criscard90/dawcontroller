@@ -127,13 +127,9 @@ class BleMidiServer:
         adv_params = gatt.GattServiceProviderAdvertisingParameters()
         adv_params.is_connectable = True
         adv_params.is_discoverable = True
-        from winrt.windows.storage.streams import DataWriter
         try:
-            dw = DataWriter()
-            dw.write_bytes(bytes([0x00]))
-            adv_params.service_data = {
-                uuid.UUID(MIDI_SERVICE_UUID): dw.detach_buffer()
-            }
+            # Il service_data in Windows non e' un dict: impostiamo i bytes
+            adv_params.service_data = bytes([0x03, 0x80])
         except Exception as e:
             self.log(f"Nota service_data: {e}")
 
