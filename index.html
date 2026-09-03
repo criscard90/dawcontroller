@@ -99,11 +99,42 @@
       box-shadow: var(--glow-shadow) var(--accent-green);
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-gap: 14px;
+    .transport {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
       flex-grow: 1;
+    }
+
+    .transport-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .nav-row {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .main-row {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .main-row .btn {
+      min-height: 100px;
+    }
+
+    .main-row .btn svg {
+      width: 38px;
+      height: 38px;
+    }
+
+    .main-row .btn label {
+      font-size: 0.85rem;
+    }
+
+    .edit-row {
+      grid-template-columns: repeat(2, 1fr);
     }
 
     .btn {
@@ -166,6 +197,14 @@
 
     .btn-stop { color: var(--text-main); }
 
+    .btn-pause { color: var(--accent-yellow); }
+    .btn-pause.active {
+      background: linear-gradient(145deg, #383209, #1c1a03);
+      border-color: var(--accent-yellow);
+      box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+    }
+    .btn-pause.active label { color: var(--accent-yellow); }
+
     .btn-loop.active {
       color: var(--accent-purple);
       border-color: var(--accent-purple);
@@ -201,51 +240,54 @@
     </button>
   </header>
 
-  <div class="grid">
-    <button class="btn btn-rtz" data-note="59">
-      <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-      <label>INIZIO</label>
-    </button>
+  <div class="transport">
+    <!-- Riga Navigazione -->
+    <div class="transport-row nav-row">
+      <button class="btn btn-rtz" data-note="59">
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        <label>START</label>
+      </button>
+      <button class="btn btn-rtz" data-note="66">
+        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        <label>END</label>
+      </button>
+      <button class="btn btn-loop" data-note="63">
+        <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+        <label>LOOP</label>
+      </button>
+    </div>
 
-    <button class="btn btn-stop" data-note="62">
-      <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
-      <label>STOP</label>
-    </button>
+    <!-- Riga Trasporto Principale -->
+    <div class="transport-row main-row">
+      <button class="btn btn-rec" data-note="60">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+        <label>REC</label>
+      </button>
+      <button class="btn btn-play" data-note="61">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <label>PLAY</label>
+      </button>
+      <button class="btn btn-stop" data-note="62">
+        <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+        <label>STOP</label>
+      </button>
+      <button class="btn btn-pause" data-note="67">
+        <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <label>PAUSE</label>
+      </button>
+    </div>
 
-    <button class="btn btn-play" data-note="61">
-      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-      <label>PLAY</label>
-    </button>
-
-    <button class="btn btn-rec" data-note="60">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
-      <label>REC</label>
-    </button>
-
-    <button class="btn btn-loop" data-note="63">
-      <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-      <label>LOOP</label>
-    </button>
-
-    <button class="btn" data-note="68">
-      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-      <label>MARKER</label>
-    </button>
-
-    <button class="btn" data-note="64">
-      <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 6v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 10.28 17.18 8 12.5 8z"/></svg>
-      <label>UNDO</label>
-    </button>
-
-    <button class="btn" data-note="65">
-      <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.68 0-8.58 2.28-9.97 6.22l2.37.78C4.95 11.81 7.96 9.5 11.5 9.5c1.96 0 3.73.72 5.12 1.88L13 15h9V6l-3.6 4.6z"/></svg>
-      <label>REDO</label>
-    </button>
-
-    <button class="btn btn-solo" data-note="67">
-      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-      <label>SOLO</label>
-    </button>
+    <!-- Riga Edit -->
+    <div class="transport-row edit-row">
+      <button class="btn" data-note="64">
+        <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 6v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 10.28 17.18 8 12.5 8z"/></svg>
+        <label>UNDO</label>
+      </button>
+      <button class="btn" data-note="65">
+        <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.68 0-8.58 2.28-9.97 6.22l2.37.78C4.95 11.81 7.96 9.5 11.5 9.5c1.96 0 3.73.72 5.12 1.88L13 15h9V6l-3.6 4.6z"/></svg>
+        <label>REDO</label>
+      </button>
+    </div>
   </div>
 
   <footer>BLE-MIDI CONTROLLER</footer>
@@ -334,7 +376,7 @@
         if (btn.classList.contains('btn-rec') || 
             btn.classList.contains('btn-play') || 
             btn.classList.contains('btn-loop') || 
-            btn.classList.contains('btn-solo')) {
+            btn.classList.contains('btn-pause')) {
           btn.classList.toggle('active');
         }
 

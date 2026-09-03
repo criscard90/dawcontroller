@@ -58,15 +58,15 @@ OSC_PORT = 8000
 # Mappa nota(BLE MIDI)→comando Reaper (ID decimale generato da default Actions list)
 # NOTA: per verificare/cambiare un ID: in Reaper → Actions (?) → trova l'azione → tasto destro → "Copy command ID"
 OSC_ACTION_MAP = {
-    59: 1004,   # INIZIO  -> Transport: Go to start of arrangement
-    60: 1016,   # REC     -> Transport: Record
-    61: 40045,   # PLAY   -> Transport: Play
-    62: 1001,   # STOP    -> Transport: Stop
-    63: 40035,   # LOOP   -> Transport: Toggle repeat
+    59: 40042,   # START  -> Transport: Go to start of project
+    60: 1013,    # REC    -> Transport: Record
+    61: 1007,    # PLAY   -> Transport: Play
+    62: 1016,    # STOP   -> Transport: Stop
+    63: 1068,    # LOOP   -> Transport: Toggle repeat
     64: 40029,   # UNDO   -> Edit: Undo
-    65: 40030,   # REDO  -> Edit: Redo
-    67: None,     # SOLO    -> non mappato per default
-    68: None,    # MARKER -> non mappato per default
+    65: 40030,   # REDO   -> Edit: Redo
+    66: 40043,   # END    -> Transport: Go to end of project
+    67: 1008,    # PAUSE  -> Transport: Pause
 
 
 
