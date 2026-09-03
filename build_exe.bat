@@ -5,9 +5,9 @@ echo Installazione dipendenze...
 pip install -r requirements.txt
 
 echo Creazione EXE con PyInstaller...
-pyinstaller --onefile ^
-  --name "DAW-MIDI-Server" ^
-  --console ^
+pyinstaller --onefile --noconsole ^
+  --icon=remote.png ^
+  --name "DAW-MIDI-Server" ^ ^
   --hidden-import=winrt ^
   --hidden-import=winrt.windows.devices.bluetooth ^
   --hidden-import=winrt.windows.devices.bluetooth.genericattributeprofile ^
